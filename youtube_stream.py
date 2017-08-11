@@ -45,8 +45,7 @@ YOUTUBE="rtmp://a.rtmp.youtube.com/live2/"				#Youtube stream URL
 KEY= #ENTER PRIVATE KEY HERE#							#Youtube stream key
 
 # FFMPEG command for streaming to Youtube
-stream_cmd = 'ffmpeg -re -ar 44100 -ac 2 -acodec pcm_s16le -f s16le -ac 2 -i /dev/zero -f h264 -i - -vcodec copy -acodec aac -ab 128k -g 50 -strict experimental -f flv ' + YOUTUBE + KEY
-
+stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac 1 -i hw:1,0 -vcodec copy -acodec aac -ac 1 -ar 8000 -ab 32k -map 0:0 -map 1:0 -strict experimental -f flv ' + YOUTUBE + KEY 
 # Popen command to PIPE from FFMPEG
 stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
 
@@ -55,7 +54,7 @@ stream_pipe = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE)
 #----------------------------
 
 camera = picamera.PiCamera()							#initialize camera
-camera.resolution = (640, 480)#(1024, 768)				#set camera resolution
+camera.resolution = (1080, 720)#(640, 480)				#set camera resolution
 camera.rotation   = 180									#set camera rotation
 camera.crop       = (0.0, 0.0, 1.0, 1.0)				#camera crop settings
 camera.framerate  = 25									#camera framerate settings
@@ -82,13 +81,19 @@ def stream():
 	camera.wait_recording(1)							#start stream
 	
 #----------------------------
+#CREATE A FUNCTION TO SHUTDOWN THE PI
+#----------------------------
+def shutdown_pi():
+        os.system("sudo shutdown -h now")
+
+#----------------------------
 #CREATE A FUNCTION ENABLING PREVIEW STREAM MODE
 #----------------------------
 
 def preview():
 	stream = io.BytesIO()
-	camera.vflip = False
-	camera.hflip = False
+	camera.vflip = True
+	camera.hflip = True
 	camera.capture(stream, use_video_port=True, format='rgb', resize=(320, 240))
 	stream.seek(0)
 	stream.readinto(rgb)
@@ -117,6 +122,7 @@ try:
 			lcd.blit(img_bg,(0,0))
 			make_button("STREAM", 5, 200, white)
 			make_button("PREVIEW",175,200, white)
+			make_button("POWER", 200, 5, white)
 			pygame.display.update()
 		for event in pygame.event.get():
 			if (event.type == pygame.MOUSEBUTTONDOWN):
@@ -125,52 +131,56 @@ try:
 				pos = pygame.mouse.get_pos()
 				print pos
 				x,y = pos
-				if y > 100:
-					if x < 200:
-						print "stream pressed"
-						if stream_toggle == 0 and preview_toggle == 0:
-							stream_toggle = 1
-							lcd.fill(blue)
-							lcd.blit(img_bg,(0,0))
-							make_button("STOP", 20, 200, white)
-							pygame.display.update()
-							camera.vflip=True
-							camera.hflip = True
-							camera.start_recording(stream_pipe.stdin, format='h264', bitrate = 2000000)
-						elif preview_toggle == 1:
-							preview_toggle = 0
-							lcd.fill(blue)
-							lcd.blit(img_bg,(0,0))
-							make_button("STREAM", 5, 200, white)
-							make_button("PREVIEW",175,200, white)
-							pygame.display.update()
-						else:
-							stream_toggle = 0
-							lcd.fill(blue)
-							make_button("STREAM", 5, 200, white)
-							make_button("PREVIEW",175,200, white)
-							pygame.display.update()
-							camera.stop_recording()
-					elif x > 225:
-						print "preview pressed"
-						if preview_toggle == 0 and stream_toggle == 0:
-							preview_toggle = 1
-							lcd.fill(blue)
-							make_button("STOP", 175,200, white)
-							pygame.display.update()
-						elif stream_toggle == 1:
-							stream_toggle = 0
-							lcd.fill(blue)
-							make_button("STREAM", 5, 200, white)
-							make_button("PREVIEW",175,200, white)
-							pygame.display.update()
-							camera.stop_recording()
-						else:
-							preview_toggle = 0
-							lcd.fill(blue)
-							make_button("STREAM", 5, 200, white)
-							make_button("PREVIEW",175,200, white)
-							pygame.display.update()
+				if x < 200 & y > 100:
+                                       print "stream pressed"
+                                       if stream_toggle == 0 and preview_toggle == 0:
+                                               stream_toggle = 1
+                                               lcd.fill(blue)
+                                               lcd.blit(img_bg,(0,0))
+                                               make_button("STOP", 20, 200, white)
+                                               pygame.display.update()
+                                               camera.vflip=True
+                                               camera.hflip = True
+                                               camera.start_recording(stream_pipe.stdin, format='h264', bitrate = 2000000)
+                                       elif preview_toggle == 1:
+                                               preview_toggle = 0
+                                               lcd.fill(blue)
+                                               lcd.blit(img_bg,(0,0))
+                                               make_button("STREAM", 5, 200, white)
+                                               make_button("PREVIEW",175,200, white)
+                                               pygame.display.update()
+                                       else:
+                                               stream_toggle = 0
+                                               lcd.fill(blue)
+                                               make_button("STREAM", 5, 200, white)
+                                               make_button("PREVIEW",175,200, white)
+                                               pygame.display.update()
+                                               camera.stop_recording()
+                                elif x > 225 & y > 150:
+                                        print "preview pressed"
+                                        if preview_toggle == 0 and stream_toggle == 0:
+                                                preview_toggle = 1
+                                                lcd.fill(blue)
+                                                make_button("STOP", 175,200, white)
+                                                pygame.display.update()
+                                        elif stream_toggle == 1:
+                                                stream_toggle = 0
+                                                lcd.fill(blue)
+                                                make_button("STREAM", 5, 200, white)
+                                                make_button("PREVIEW",175,200, white)
+                                                pygame.display.update()
+                                                camera.stop_recording()
+                                        else:
+                                                preview_toggle = 0
+                                                lcd.fill(blue)
+                                                make_button("STREAM", 5, 200, white)
+                                                make_button("PREVIEW",175,200, white)
+                                                pygame.display.update()
+                                elif x > 200 & y < 100:
+                                        print "power pressed"
+                                        if preview_toggle == 0 and stream_toggle == 0:
+                                                shutdown_pi()
+
 except KeyboardInterrupt:
 	camera.stop_recording()
 	print ' Exit Key Pressed'
