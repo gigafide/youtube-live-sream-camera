@@ -28,7 +28,7 @@ pygame.init()											#initialize pygame
 lcd = pygame.display.set_mode((0,0), pygame.FULLSCREEN)	#set display mode
 pygame.mouse.set_visible(False)							#disable mouse visibility
 
-img_bg = pygame.image.load('camera_bg.jpg')
+img_bg = pygame.image.load('/home/pi/camera_bg.jpg')
 
 preview_toggle = 0										#toggle variable for preview mode
 stream_toggle = 0										#toggle variable for stream mode
